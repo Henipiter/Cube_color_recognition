@@ -1,17 +1,18 @@
 # import the necessary packages
-import statistics
-import imutils
+
 import cv2
 import numpy as np
 import filter
 import drawContoures
 import colorIdentify
+#from skimage import io
+
 directorySource = "./source/"
 directoryResult = "./result/"
 nameList=[]
-singlePhoto = "img1.jpg"
+singlePhoto = "white4.jpg"
 loop = False
-showParam = False
+showParam = True
 if( loop ):
 	for i in range (1,8):
 		nameList.append("img"+str(i)+".jpg")
@@ -19,40 +20,49 @@ else:
 	nameList.append(singlePhoto)
 
 for name in nameList:
+	## wczytanie obrazu
 	ori_image = cv2.imread(directorySource+name)
+	original = ori_image
 	print("Processing... ", name)
+	## obraz jest wybielony, zanegowany (z bieli na czern) i wyciagniec
+	bright_image = filter.brightFilter(ori_image)
+	##znalezienie konturow
+	cnts = drawContoures.findContour(bright_image)
+	##znalezienie pol
+	areas = drawContoures.findAreas(cnts, showParam)
+	##znalezienie najwiekszego konturu - kostka
+	contourCube = drawContoures.getMaxContour(cnts,areas)
+	## usuniecie tla z obrazu
 	
+	cube_img = filter.eraseBackground(ori_image, contourCube)
+	cv2.imwrite(directoryResult+"F3i2inal_"+name, cube_img)
+	#######################
+	#cv2.imwrite(directoryResult+"Fiinal_"+name, img)
+	#image = cv2.imread(directoryResult+"Fiinal_"+name)
 
-	# filtering
-	image = filter.make_filters(ori_image)
-	cv2.imwrite(directoryResult+"Gray_"+name, image)
-
-	# find contours in the thresholded image
-	cnts = cv2.findContours(image.copy(), cv2.RETR_EXTERNAL,
-		cv2.CHAIN_APPROX_SIMPLE)
-	cnts = imutils.grab_contours(cnts)
-	areas = []
-
-	for c in cnts:
-			area = cv2.contourArea(c)
-			areas.append(area)
-			if(showParam):
-				print(area)
-	avgColor=0
-	medianArea = 0
-	if(len(areas)>1):
-		medianArea = statistics.median(areas[:len(areas)//2])
-	if(showParam):
-		print("3 kwantyl: ", medianArea)
-		print("maks: ", max(areas))
-
-
-	ori_image = filter.adjust_gamma(ori_image, gamma=1.5)
-	ori_image = cv2.cvtColor(ori_image, cv2.COLOR_BGR2HSV)
-	ori_image = drawContoures.makeMark(cnts, ori_image, image, medianArea, areas,showParam)
-	ori_image = cv2.cvtColor(ori_image, cv2.COLOR_HSV2BGR)
-
-	cv2.imwrite(directoryResult+"Final_"+name, ori_image)
+	dark_image = filter.darkFilter(cube_img)
+	cv2.imwrite(directoryResult+"dark.jpg", dark_image)
+	
+	cnts = drawContoures.findContour(dark_image)
+	areas = drawContoures.findAreas(cnts, showParam)
+	
+	original = cv2.imread(directorySource+name)
+	original = filter.increase_sharpness(original, 80)
+	#original = filter.adjust_gamma(original, gamma=1.5)
+	#ori_image = filter.adjust_gamma(ori_image, gamma=1.5)
+			
+	original = cv2.cvtColor(ori_image, cv2.COLOR_BGR2HSV)
+	original = drawContoures.makeMark(cnts, original, dark_image, areas, showParam)
+	
+	original = cv2.cvtColor(original, cv2.COLOR_HSV2BGR)
+	#ori_image = filter.adjust_gamma(ori_image, gamma=1.5)
+	#ori_image = cv2.cvtColor(ori_image, cv2.COLOR_BGR2HSV)
+	#ori_image = drawContoures.makeMark([c], ori_image, image, areas,showParam)
+	#ori_image = cv2.cvtColor(ori_image, cv2.COLOR_HSV2BGR)
+	
+	cv2.imwrite(directoryResult+"original.jpg", original)
+	
+	
 	print("Processing done.\n")
 
 #cv2.imwrite("g.png", image) 
