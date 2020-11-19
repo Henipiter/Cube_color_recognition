@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import scipy
+import drawContoures
 
 def adjust_gamma(image, gamma=1.0):
    invGamma = 1.0 / gamma
@@ -11,9 +12,15 @@ def adjust_gamma(image, gamma=1.0):
 def increase_brightness(img, value=30):
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     h, s, v = cv2.split(hsv)
-    lim = 255 - value
-    v[v > lim] = 255
-    v[v <= lim] += value
+    if(value>=0):
+        lim = 255 - value
+        v[v > lim] = 255
+        v[v <= lim] += value
+    else:
+        value = -value
+        v[v < value] = 0
+        v[v >= value] -= value 
+
     final_hsv = cv2.merge((h, s, v))
     img = cv2.cvtColor(final_hsv, cv2.COLOR_HSV2BGR)
     return img
@@ -28,16 +35,26 @@ def increase_sharpness(img, value=30):
     img = cv2.cvtColor(final_hsv, cv2.COLOR_HSV2BGR)
     return img
 
-def brightFilter(image):
-	kernel = np.ones((5, 5), np.uint8)
-	image = adjust_gamma(image, 2.0)
-	image = increase_brightness(image, 150)
-	image = cv2.bitwise_not(image)
-	image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-	image = cv2.threshold(image, 20, 255, cv2.THRESH_BINARY)[1]
-	image = cv2.dilate(image,kernel,iterations = 5)
-	return image
+
+def getBlackElem(image):
 	
+	kernel = np.ones((5, 5), np.uint8)
+	hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+	lower_black = np.array([0,0,0])
+	upper_black = np.array([179,255,30])
+	mask = cv2.inRange(hsv, lower_black, upper_black)
+	background = np.full(image.shape, 255, dtype=np.uint8)
+	
+	res = cv2.bitwise_and(background,background, mask=mask)
+
+	image = cv2.cvtColor(res, cv2.COLOR_BGR2GRAY)
+	image = cv2.threshold(image, 10, 255, cv2.THRESH_BINARY)[1]
+	
+	image = cv2.dilate(image,kernel,iterations = 2)
+	cv2.imwrite("frame.jpg", image)
+	return image
+
+
 def eraseBackground(img,c):
 	fill_color = [0, 0, 0]
 	mask_value = 255
@@ -47,32 +64,40 @@ def eraseBackground(img,c):
 	img[sel] = fill_color   
 	return img
 
-def darkFilter(image):
+def darkBackground(image):
 	kernel = np.ones((5, 5), np.uint8)
-	print("Bilateral filter...", end = '')
-	#image = cv2.bilateralFilter(image, 40 ,200,  200)
-	print(" Done.")
+	image = cv2.bitwise_not(image)
+	image = adjust_gamma(image, 1.5)
+	image = increase_brightness(image, 100)
+	image = cv2.dilate(image,kernel,iterations = 5)
+	cv2.imwrite("bright.jpg", image)
 
-	print("Gamma filter...", end = '')
-	#image = adjust_gamma(image, 0.5)
-	print(" Done.")
+	image = cv2.bitwise_not(image)
+	image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+	image = cv2.threshold(image, 20, 255, cv2.THRESH_BINARY)[1]
+	return image
+	
 
-	print("Erode filter...", end = '')
-	image = cv2.erode(image, kernel,iterations=5) 
-	print(" Done.")
+def brightBackground(ori_image):
 
-	print("Gaussian filter...", end = '')
-	#image = cv2.GaussianBlur(image, (7,7), 0)
-	print(" Done.")
-
-	print("Median filter...", end = '')
-	#image = cv2.medianBlur(image, 25)
-	print(" Done.")
-
+	kernel = np.ones((5, 5), np.uint8)
+	image = adjust_gamma(ori_image, 2.0)
+	image = increase_brightness(image, 150)
+	
+	image = cv2.bitwise_not(image)
+	cv2.imwrite("dark.jpg", image)
 	print("Gray filter...", end = '')
 	image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-	image = cv2.threshold(image, 30, 255, cv2.THRESH_BINARY)[1]
+	image = cv2.threshold(image, 20, 255, cv2.THRESH_BINARY)[1]
 	print(" Done.")
 	cv2.imwrite("nal.jpg", image)
-
+	cnts = drawContoures.findContour(image)
+	##znalezienie pol
+	areas = drawContoures.findAreas(cnts, False)
+	##znalezienie najwiekszego konturu - kostka
+	contourCube = drawContoures.getMaxContour(cnts,areas)
+	## usuniecie tla z obrazu
+	
+	image = eraseBackground(ori_image, contourCube)
 	return image
+
