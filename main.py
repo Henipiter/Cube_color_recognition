@@ -8,15 +8,15 @@ import colorIdentify
 import glob
 #from skimage import io
 
-directorySource = "./source/"
+directorySource = "./source1/"
 directoryResult = "./result/"
 nameList=[]
-singlePhoto = "white1.jpg"
-loop = True
-showParam = False
+singlePhoto = "kostka.jpg"
+loop = False
+showParam = True
 if( loop ):
-	for i in glob.glob(directorySource+"*.jpg"):
-		i = i[9:]
+	for i in glob.glob(directorySource+"b*.jpg"):
+		i = i[10:]
 		nameList.append(i)
 
 	#for i in range (1,18):
@@ -48,10 +48,11 @@ for name in nameList:
 	print("Processing... ", name)
 	## obraz jest wybielony, zanegowany (z bieli na czern) i wyciagniec
 	#bright_image = filter.getBlackElem(ori_image)
-	if(not dark):
-		ori_image = filter.brightBackground(ori_image)
+	#if(not dark):
+	ori_image = filter.brightBackground(ori_image)
 
-
+	
+	cv2.imwrite(directoryResult+"white_"+name, ori_image)
 	blackwhite_image = filter.darkBackground(ori_image)
 	
 		#ori_image = image = cv2.bitwise_not(ori_image)

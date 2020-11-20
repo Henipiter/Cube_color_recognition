@@ -81,10 +81,12 @@ def darkBackground(image):
 def brightBackground(ori_image):
 
 	kernel = np.ones((5, 5), np.uint8)
-	image = adjust_gamma(ori_image, 2.0)
-	image = increase_brightness(image, 150)
 	
-	image = cv2.bitwise_not(image)
+	image = cv2.bitwise_not(ori_image)
+	image = adjust_gamma(image, 0.5)
+	image = increase_brightness(image, -50)
+	
+	image = cv2.dilate(image,kernel,iterations = 8)
 	cv2.imwrite("dark.jpg", image)
 	print("Gray filter...", end = '')
 	image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -99,5 +101,6 @@ def brightBackground(ori_image):
 	## usuniecie tla z obrazu
 	
 	image = eraseBackground(ori_image, contourCube)
+	cv2.imwrite("nalww.jpg", image)
 	return image
 
