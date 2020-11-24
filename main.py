@@ -6,31 +6,24 @@ import filter
 import drawContoures
 import colorIdentify
 import glob
+import images
 #from skimage import io
-
+showStep = False
 directorySource = "./source1/"
 directoryResult = "./result/"
 nameList=[]
-singlePhoto = "kostka.jpg"
-loop = False
-showParam = True
+singlePhoto = "black_1.jpg"
+loop = True
+showParam = False
 if( loop ):
 	for i in glob.glob(directorySource+"b*.jpg"):
-		i = i[10:]
+		i = i[len(directorySource):]
 		nameList.append(i)
 
-	#for i in range (1,18):
-		#nameList.append("white"+str(i)+".jpg")
 else:
 	nameList.append(singlePhoto)
 
-#for i in glob.glob(directorySource+"*.jpg"):
-#	print(i, end =' ')
-#	img = cv2.imread(i)
-#	
-#	img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-#	average = img.mean(axis=0).mean(axis=0)
-#	print(average)
+steps = images.ImageList()
 	
 
 
@@ -49,11 +42,11 @@ for name in nameList:
 	## obraz jest wybielony, zanegowany (z bieli na czern) i wyciagniec
 	#bright_image = filter.getBlackElem(ori_image)
 	#if(not dark):
-	ori_image = filter.brightBackground(ori_image)
+	#ori_image = filter.brightBackground(ori_image)
 
 	
 	cv2.imwrite(directoryResult+"white_"+name, ori_image)
-	blackwhite_image = filter.darkBackground(ori_image)
+	blackwhite_image = filter.darkBackground(ori_image, showStep, steps)
 	
 		#ori_image = image = cv2.bitwise_not(ori_image)
 		
@@ -89,7 +82,7 @@ for name in nameList:
 	#original = filter.adjust_gamma(original, gamma=1.5)
 			
 	original = cv2.cvtColor(original, cv2.COLOR_BGR2HSV)
-	original = drawContoures.makeMark(cnts, original, blackwhite_image, areas, showParam)
+	original = drawContoures.makeMark(cnts, original, blackwhite_image, areas, showParam, showStep, steps)
 	original = cv2.cvtColor(original, cv2.COLOR_HSV2BGR)
 	#ori_image = filter.adjust_gamma(ori_image, gamma=1.5)
 	#ori_image = cv2.cvtColor(ori_image, cv2.COLOR_BGR2HSV)
@@ -97,8 +90,9 @@ for name in nameList:
 	#ori_image = cv2.cvtColor(ori_image, cv2.COLOR_HSV2BGR)
 	
 	cv2.imwrite(directoryResult+"Final_"+name, original)
-	
-	
+	if(showStep):
+		steps.addImages([original])
+		steps.concat()
 	print("Processing done.\n")
 
 #cv2.imwrite("g.png", image) 
