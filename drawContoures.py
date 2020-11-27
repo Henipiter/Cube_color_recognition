@@ -11,7 +11,6 @@ def getAverageColor (ori_image, image, c):
 	cv2.drawContours(mask,[c],0,255,-1)
 	
 	image = cv2.erode(image,kernel,iterations = 5)
-	cv2.imwrite("mask.jpg", mask)
 	val = cv2.mean(ori_image,mask)
 	return val
 
@@ -37,7 +36,8 @@ def makeMark(cnts, ori_image, image, areas, showParam, showSteps, steps):
 	
 	print("Contouring...", end = '')
 	i=0
-	colored = ori_image.copy()
+	if(showSteps):
+		colored = ori_image.copy()
 	for c in cnts:
 		avgColor=0
 		minArea=0.0
@@ -49,7 +49,7 @@ def makeMark(cnts, ori_image, image, areas, showParam, showSteps, steps):
 		if(M["m00"]!=0 and area>= minArea):
 			avgColor = getAverageColor(ori_image, image, c)
 			nameC = colorIdentify.colorName(avgColor)
-			nameC = nameC+str(i)
+			#nameC = nameC+str(i)
 			i+=1
 			cX = int(M["m10"] / M["m00"])
 			cY = int(M["m01"] / M["m00"])
@@ -76,7 +76,7 @@ def makeMark(cnts, ori_image, image, areas, showParam, showSteps, steps):
 		
 	if(showSteps):
 		colored = cv2.cvtColor(colored, cv2.COLOR_HSV2BGR)
-		steps.addImages([colored])
+		steps.addImages([colored], ["Colored"])
 	
 	print("Done.")
 	return ori_image
